@@ -1,0 +1,121 @@
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+
+const app = express();
+
+app.use(express.json());
+app.use(cors());
+app.use(bodyParser.json());
+
+mongoose
+  .connect("mongodb://127.0.0.1:27017/TestdB", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((error) => {
+    console.log("Error connecting to MongoDB:", error);
+  });
+
+const attendanceSchema = new mongoose.Schema({
+  years: [
+    {
+      year: Number,
+      months: [
+        {
+          month: Number,
+          dates: [
+            {
+              date: Number,
+              day: Number,
+              logs: [
+                {
+                  loginTime: [String],
+                  logoutTime: [String],
+                  breakTime: [String],
+                  status: String,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+});
+
+const AttendanceModel = mongoose.model("Attendance", attendanceSchema);
+
+app.post("/api/attendance", async (req, res) => {
+  const { year, month, date, loginTime, logoutTime, breakTime, status } =
+    req.body;
+
+  try {
+    let attendanceRecord = await AttendanceModel.findOneAndUpdate(
+      { "years.year": year },
+      {
+        $setOnInsert: {
+          years: [{ year, months: [] }],
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    let yearObject = attendanceRecord.years.find((y) => y.year === year);
+
+    if (!yearObject) {
+      yearObject = { year, months: [] };
+      attendanceRecord.years.push(yearObject);
+    }
+
+    let monthObject = yearObject.months.find((m) => m.month === month);
+
+    if (!monthObject) {
+      monthObject = { month, dates: [] };
+      yearObject.months.push(monthObject);
+    }
+
+    let dateObject = monthObject.dates.find((d) => d.date === date);
+
+    if (!dateObject) {
+      dateObject = {
+        date,
+        day: new Date(year, month - 1, date).getDay(),
+        logs: [],
+      };
+      monthObject.dates.push(dateObject);
+    }
+
+    const existingLog = dateObject.logs.find(
+      (log) =>
+        log.loginTime[0] === loginTime[0] &&
+        log.logoutTime[0] === logoutTime[0] &&
+        log.breakTime[0] === breakTime[0]
+    );
+
+    if (existingLog) {
+      // Update the existing log entry
+      existingLog.status = status;
+    } else {
+      // Create a new log entry
+      dateObject.logs.push({ loginTime, logoutTime, breakTime, status });
+    }
+
+    await attendanceRecord.save();
+
+    res.status(200).json({ message: "Attendance data updated successfully" });
+  } catch (error) {
+    console.error("Error updating attendance data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+const PORT = 5000;
+
+app.listen(PORT, () => {
+  console.log(`App is listening on PORT: ${PORT}`);
+});
