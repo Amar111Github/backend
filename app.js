@@ -12,7 +12,7 @@ const errorHandler = require("./middleware/errorHandler");
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://crm-upbstechnology.com",
+    origin: "http://13.202.112.196:3000",
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -85,7 +85,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["https://crm-upbstechnology.com"],
+    origin: ["http://13.202.112.196:3000"],
     credentials: true,
   })
 );
