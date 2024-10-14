@@ -12,7 +12,7 @@ const errorHandler = require("./middleware/errorHandler");
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://crm-upbstechnology.com",
+    origin: "https://kasperinfotech.in",
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -85,7 +85,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["https://crm-upbstechnology.com"],
+    origin: ["https://kasperinfotech.in"],
     credentials: true,
   })
 );
@@ -1316,6 +1316,18 @@ app.delete("/delete-document/:id", async (req, res) => {
     res.status(500).send("Error deleting document.");
   }
 });
+
+const buildPath = path.join(__dirname, '../frontend/build');
+app.use(express.static(buildPath));
+
+// Fallback to serve index.html for any random GET request
+app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+});
+
+
+
+
 server.listen(PORT, () =>
   console.log(`Example app listening on port ${PORT}!`)
 );
