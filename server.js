@@ -13,11 +13,13 @@ app.use(express.json());
 
 // Database configuration
 const dbConfig = require("./config/dbConfig");
-app.use(helmet());
+app.use(express.json());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');  // Don't cache anything
-  res.setHeader('Pragma', 'no-cache');         // Older HTTP 1.0 header
-  res.setHeader('Expires', '0');               // Expire immediately
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
   next();
 });
 
@@ -47,13 +49,14 @@ app.use("/api/question-sets", questionRoutes);
 app.use("/api/reports", reportRoutes);
 
 const buildPath = path.join(__dirname, '../frontend/build');
+
+// Serve static files from the build directory
 app.use(express.static(buildPath));
 
-// Fallback route to serve index.html for any random GET request
+// Fallback route to serve index.html for any GET request that doesn't match a static file
 app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
 });
-
 
 
 const port = process.env.PORT || 5000;

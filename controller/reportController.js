@@ -9,7 +9,7 @@ const addReport = async (req, res) => {
   try {
     const zipFile = req.file; // Assuming multer is used for file upload
     const { exam, result, user } = JSON.parse(req.body.payload);
-
+    
     let recording = null;
     if (zipFile) {
       // Upload the ZIP file to Cloudinary
@@ -42,6 +42,7 @@ const addReport = async (req, res) => {
     }
 
     // Create a new Report document with the related exam, result, user, and recording ID
+
     const newReport = new Report({
       exam,
       result,
@@ -50,6 +51,8 @@ const addReport = async (req, res) => {
     });
 
     // Save the report to the database
+
+    // Save the report to the database 
     await newReport.save();
 
     res.send({
@@ -70,7 +73,6 @@ const addReport = async (req, res) => {
 const getAllReports = async (req, res) => {
   try {
     const { examName, userName, recordingFileUrl } = req.body;
-
     // Find exams matching the exam name
     const exams = await Exam.find({
       name: { $regex: examName, $options: "i" }, // Case-insensitive regex search
@@ -93,17 +95,23 @@ const getAllReports = async (req, res) => {
       .populate("exam")
       .populate("user")
       .populate("recording") // Include recording details
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();  // Use lean for plain JS objects to avoid Mongoose overhead
 
+    // Filter by recordingFileUrl if provided
     if (recordingFileUrl) {
       reports = reports.filter(
         (report) => report.recording && report.recording.fileUrl.includes(recordingFileUrl)
       );
     }
 
+    // Remove duplicate reports if necessary (based on report._id)
+    const uniqueReports = Array.from(new Set(reports.map(report => report._id)))
+      .map(id => reports.find(report => report._id === id));
+
     res.send({
       message: "Attempts fetched successfully",
-      data: reports,
+      data: uniqueReports,
       success: true,
     });
   } catch (error) {
@@ -118,15 +126,24 @@ const getAllReports = async (req, res) => {
 
 const getAllReportsByUser = async (req, res) => {
   try {
+    console.log("Request body:", req.body); // Log to check incoming userId
     const reports = await Report.find({ user: req.body.userId })
       .populate("exam")
       .populate("user")
       .populate("recording") // Include recording details
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();  // Use lean to convert to plain JS objects
+
+    // Remove duplicates if needed
+    const uniqueReports = reports.filter((value, index, self) =>
+      index === self.findIndex((t) => (
+        t.exam._id === value.exam._id && t.user._id === value.user._id
+      ))
+    );
 
     res.send({
       message: "Attempts fetched successfully",
-      data: reports,
+      data: uniqueReports,
       success: true,
     });
   } catch (error) {
@@ -137,6 +154,7 @@ const getAllReportsByUser = async (req, res) => {
     });
   }
 };
+
 
 module.exports = { addReport, getAllReports, getAllReportsByUser };
 

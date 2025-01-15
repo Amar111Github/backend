@@ -7,7 +7,7 @@ userRoute.post("/register", userController.registerUser);
 
 // User Login
 userRoute.post("/login", userController.loginUser);
-
+userRoute.post("/take-test", authMiddleware, userController.takeTest);
 // Get User Info
 userRoute.post("/get-user-info", authMiddleware, userController.getUserInfo);
 

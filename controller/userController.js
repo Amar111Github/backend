@@ -71,6 +71,47 @@ const loginUser = async (req, res) => {
   }
 };
 
+const takeTest = async (req, res) => {
+  try {
+    const userId = req.body.userId;
+
+    // Find the user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({
+        message: "User not found",
+        success: false,
+      });
+    }
+
+    // Check if the user is an admin or has already taken the test
+    if (!user.isAdmin && user.hasTakenTest) {
+      return res.status(403).send({
+        message: "You have already taken the test.",
+        success: false,
+      });
+    }
+
+    // Allow admin or first-time user to proceed
+    user.hasTakenTest = true;
+    await user.save();
+
+    res.send({
+      message: "Test completed successfully",
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: "Error taking the test",
+      data: error,
+      success: false,
+    });
+  }
+};
+
+
+
 // Get User Info
 const getUserInfo = async (req, res) => {
   try {
@@ -81,4 +122,6 @@ const getUserInfo = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser,getUserInfo   };
+
+
+module.exports = { registerUser, loginUser,getUserInfo ,takeTest  };
