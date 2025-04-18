@@ -11,55 +11,55 @@ const helmet = require('helmet');
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-// Database configuration
-const dbConfig = require("./config/dbConfig");
+// Security headers
 app.use(helmet());
+
+// Disable caching
 app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');  // Don't cache anything
-  res.setHeader('Pragma', 'no-cache');         // Older HTTP 1.0 header
-  res.setHeader('Expires', '0');               // Expire immediately
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   next();
 });
 
+// Database configuration
+const dbConfig = require("./config/dbConfig");
 
-// new controller based
-const userRoutes = require("./routes/userRoutes");
-const examRoutes = require("./routes/examRoutes");
-const questionRoutes = require("./routes/questionRoutes");
-const reportRoutes = require("./routes/reportRoutes");
+// Models
 const Recording = require("./models/recordingModel");
 const User = require("./models/userModel");
 const Exam = require("./models/examModel");
 
-
+// CORS config
 app.use(cors({
   origin: ["http://localhost:3000"], 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 }));
 
-// Serve static files from React build
+// API routes
+const userRoutes = require("./routes/userRoutes");
+const examRoutes = require("./routes/examRoutes");
+const questionRoutes = require("./routes/questionRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
-
-// new routes 
 app.use("/api/users", userRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/question-sets", questionRoutes);
 app.use("/api/reports", reportRoutes);
 
+// ✅ Serve React build after API routes
 const buildPath = path.join(__dirname, '../frontend/build');
-
-// Serve static files from the build directory
 app.use(express.static(buildPath));
 
-// Fallback route to serve index.html for any GET request that doesn't match a static file
+// ✅ Fallback route for React Router (must be after static)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
+  res.sendFile(path.join(buildPath, 'index.html'));
 });
 
-
+// Server port
 const port = process.env.PORT || 5000;
-
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
